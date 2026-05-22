@@ -1,0 +1,26 @@
+# Daten & Artefakte (lokal, nicht versionieren)
+data/
+results/
+checkpoints/
+wandb/
+runs/
+# splits/folds.json wird versioniert (reproduzierbar via scripts/make_splits.py)
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
+
+# Secrets
+.env
+wandb.env

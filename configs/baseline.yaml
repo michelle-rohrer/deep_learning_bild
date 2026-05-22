@@ -1,0 +1,28 @@
+# Baseline gemäss Projektdokument (Kap. 3.3)
+experiment_name: baseline
+seed: 42
+device: cuda
+
+data_dir: data
+splits_path: splits/folds.json
+checkpoint_dir: checkpoints
+
+patch_size: [128, 128, 32]
+patches_per_volume: 8
+batch_size: 2
+num_workers: 0
+
+base_channels: 16
+depth: 4
+dropout: 0.3
+
+epochs: 80
+learning_rate: 0.0001
+loss_name: dice
+mc_samples: 20
+eval_every_epochs: 1
+
+augmentation: false
+use_wandb: true
+wandb_project: dlbs-muscle-seg
+wandb_tags: [baseline, bayesian-unet, left-only]

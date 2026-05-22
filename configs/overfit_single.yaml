@@ -1,0 +1,31 @@
+# Technische Validierung: ein Fall, Dice >= 0.90 (Kap. 3.3)
+experiment_name: overfit_single
+seed: 42
+device: cuda
+
+data_dir: data
+checkpoint_dir: checkpoints
+
+patch_size: [128, 128, 32]
+patches_per_volume: 16
+batch_size: 2
+num_workers: 0
+
+base_channels: 16
+depth: 4
+dropout: 0.3
+
+epochs: 200
+learning_rate: 0.0001
+max_train_steps_per_epoch: 50
+mc_samples: 5
+eval_every_epochs: 1
+
+overfit_subject: "512"
+overfit_target_dice: 0.90
+subjects: ["512"]
+
+augmentation: false
+use_wandb: true
+wandb_project: dlbs-muscle-seg
+wandb_tags: [overfit-test, sanity-check]

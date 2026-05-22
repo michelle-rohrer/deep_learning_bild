@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "muscle-seg"
+version = "0.1.0"
+description = "3D Muskel-Segmentierung – Mini-Challenge DLBS"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "torch>=2.2.0",
+    "nibabel>=5.2.0",
+    "numpy>=1.26.0",
+    "pandas>=2.2.0",
+    "PyYAML>=6.0.1",
+    "tqdm>=4.66.0",
+    "wandb>=0.16.0",
+    "scikit-learn>=1.4.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-dir]
+"" = "src"

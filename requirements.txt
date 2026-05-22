@@ -1,0 +1,9 @@
+# Core ML (Mini-Challenge Muskel-Segmentierung)
+torch>=2.2.0
+nibabel>=5.2.0
+numpy>=1.26.0
+pandas>=2.2.0
+PyYAML>=6.0.1
+tqdm>=4.66.0
+wandb>=0.16.0
+scikit-learn>=1.4.0
