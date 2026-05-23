@@ -2,8 +2,9 @@
 data/
 results/
 checkpoints/
-wandb/
 runs/
+cluster/logs/
+results/
 # splits/folds.json wird versioniert (reproduzierbar via scripts/make_splits.py)
 
 # Python
@@ -23,4 +24,3 @@ __pycache__/
 
 # Secrets
 .env
-wandb.env

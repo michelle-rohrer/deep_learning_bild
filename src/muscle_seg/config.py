@@ -11,7 +11,7 @@ import yaml
 
 @dataclass
 class TrainConfig:
-    """Alle Trainings-Parameter an einem Ort (später: Sweeps über WandB)."""
+    """Alle Trainings-Parameter an einem Ort (später: Tuning via TensorBoard HParams)."""
 
     # Pfade
     project_root: Path = field(default_factory=lambda: Path("."))
@@ -57,11 +57,9 @@ class TrainConfig:
     # Augmentation (Baseline: aus)
     augmentation: bool = False
 
-    # WandB
-    use_wandb: bool = True
-    wandb_project: str = "dlbs-muscle-seg"
-    wandb_entity: str | None = None
-    wandb_tags: list[str] = field(default_factory=list)
+    # TensorBoard (TensorFlow-Ökosystem)
+    use_tensorboard: bool = True
+    tensorboard_log_dir: Path = field(default_factory=lambda: Path("runs"))
 
     # Subset
     subjects: list[str] | None = None  # z.B. nur ein Fall für Overfit
@@ -73,6 +71,8 @@ class TrainConfig:
             raw = yaml.safe_load(f) or {}
         if overrides:
             raw = {**raw, **overrides}
+        valid = {f.name for f in cls.__dataclass_fields__.values()}
+        raw = {k: v for k, v in raw.items() if k in valid}
         return cls(**_coerce_fields(raw))
 
     def resolve_paths(self, root: Path | None = None) -> TrainConfig:
@@ -81,6 +81,7 @@ class TrainConfig:
         self.data_dir = (root / self.data_dir).resolve()
         self.splits_path = (root / self.splits_path).resolve()
         self.checkpoint_dir = (root / self.checkpoint_dir).resolve()
+        self.tensorboard_log_dir = (root / self.tensorboard_log_dir).resolve()
         return self
 
 
@@ -90,7 +91,7 @@ def _coerce_fields(raw: dict[str, Any]) -> dict[str, Any]:
     for key in ("patch_size", "intensity_clip_percentile"):
         if key in out and isinstance(out[key], list):
             out[key] = tuple(out[key])
-    for key in ("project_root", "data_dir", "splits_path", "checkpoint_dir"):
+    for key in ("project_root", "data_dir", "splits_path", "checkpoint_dir", "tensorboard_log_dir"):
         if key in out and out[key] is not None:
             out[key] = Path(out[key])
     return out

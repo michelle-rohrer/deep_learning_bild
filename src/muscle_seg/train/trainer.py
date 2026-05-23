@@ -18,9 +18,10 @@ from muscle_seg.labels import NUM_CLASSES
 from muscle_seg.losses.dice import MultiClassDiceLoss
 from muscle_seg.metrics.dice import aggregate_macro_dice, macro_dice_left_muscles
 from muscle_seg.models.bayesian_unet import BayesianUNet3D, mc_predict
+from muscle_seg.train.tensorboard_logger import TBLogger
 
 
-def _config_for_wandb(cfg: TrainConfig, **extra) -> dict:
+def _config_dict(cfg: TrainConfig, **extra) -> dict:
     d = {k: (str(v) if isinstance(v, Path) else v) for k, v in cfg.__dict__.items()}
     d.update(extra)
     return d
@@ -65,23 +66,9 @@ class Trainer:
             dropout=self.cfg.dropout,
         ).to(self.device)
 
-    def _wandb_init(self, run_name: str, config_dict: dict):
-        if not self.cfg.use_wandb:
-            return None
-        import wandb
-
-        return wandb.init(
-            project=self.cfg.wandb_project,
-            entity=self.cfg.wandb_entity,
-            name=run_name,
-            config=config_dict,
-            tags=self.cfg.wandb_tags,
-            reinit=True,
-        )
-
     def train_one_fold(self, fold_idx: int, train_subj: list[str], val_subj: list[str]) -> dict:
         cfg = self.cfg
-        run_name = f"{cfg.experiment_name}_fold{fold_idx}"
+        run_name = f"fold{fold_idx}"
         ckpt_dir = cfg.checkpoint_dir / cfg.experiment_name / f"fold_{fold_idx}"
         ckpt_dir.mkdir(parents=True, exist_ok=True)
 
@@ -118,9 +105,10 @@ class Trainer:
             weight_decay=cfg.weight_decay,
         )
 
-        wb = self._wandb_init(
+        tb = TBLogger(
+            cfg,
             run_name,
-            _config_for_wandb(cfg, fold=fold_idx, train=train_subj, val=val_subj),
+            hparams=_config_dict(cfg, fold=fold_idx, train_subjects=train_subj, val_subjects=val_subj),
         )
 
         best_val_dice = -1.0
@@ -131,7 +119,7 @@ class Trainer:
             model.train()
             train_losses: list[float] = []
             steps = 0
-            pbar = tqdm(train_loader, desc=f"{run_name} ep{epoch}", leave=False)
+            pbar = tqdm(train_loader, desc=f"{cfg.experiment_name}_{run_name} ep{epoch}", leave=False)
             for batch in pbar:
                 x = batch["image"].to(self.device)
                 y = batch["mask"].to(self.device)
@@ -150,17 +138,16 @@ class Trainer:
                 val_metrics = self.evaluate(model, val_loader)
                 val_dice = val_metrics["macro_dice_left"]
                 log = {
-                    "fold": fold_idx,
-                    "epoch": epoch,
-                    "train_loss": float(np.mean(train_losses)),
-                    "val_macro_dice_left": val_dice,
+                    "train/loss": float(np.mean(train_losses)),
+                    "val/macro_dice_left": val_dice,
                 }
-                self.history.append(log)
-
-                if wb:
-                    import wandb
-
-                    wandb.log(log, step=epoch)
+                self.history.append({"fold": fold_idx, "epoch": epoch, **log})
+                tb.log_scalars(log, step=epoch)
+                print(
+                    f"[{cfg.experiment_name}/{run_name}] epoch {epoch}: "
+                    f"loss={log['train/loss']:.4f} val_dice={val_dice:.4f}",
+                    flush=True,
+                )
 
                 if val_dice > best_val_dice:
                     best_val_dice = val_dice
@@ -175,15 +162,13 @@ class Trainer:
                         best_path,
                     )
 
-        if wb:
-            import wandb
-
-            wandb.finish()
+        tb.close()
 
         summary = {
             "fold": fold_idx,
             "best_val_macro_dice_left": best_val_dice,
             "checkpoint": str(best_path),
+            "tensorboard_run": str(cfg.tensorboard_log_dir / cfg.experiment_name / run_name),
         }
         (ckpt_dir / "summary.json").write_text(json.dumps(summary, indent=2))
         return summary
@@ -197,7 +182,7 @@ class Trainer:
         for batch in loader:
             x = batch["image"].to(self.device)
             y = batch["mask"].to(self.device)
-            pred, variance = mc_predict(model, x, n_samples=cfg.mc_samples)
+            pred, _variance = mc_predict(model, x, n_samples=cfg.mc_samples)
             for i in range(x.shape[0]):
                 d, _ = macro_dice_left_muscles(pred[i].cpu(), y[i].cpu())
                 dice_scores.append(d)
@@ -212,12 +197,8 @@ class Trainer:
     def run(self) -> dict:
         folds = load_folds(self.cfg.splits_path)
         if self.cfg.subjects:
-            # Overfit-Modus: ein Subject, kein Fold-Split
-            summaries = []
-            wb = self._wandb_init(
-                f"{self.cfg.experiment_name}_overfit",
-                _config_for_wandb(self.cfg),
-            )
+            run_name = "overfit"
+            tb = TBLogger(self.cfg, run_name, hparams=_config_dict(self.cfg))
             train_ds, _ = build_datasets(
                 self.cfg.data_dir,
                 self.cfg.subjects,
@@ -238,6 +219,7 @@ class Trainer:
             model = self._build_model()
             optimizer = torch.optim.Adam(model.parameters(), lr=self.cfg.learning_rate)
             target = self.cfg.overfit_target_dice
+            dice = 0.0
 
             for epoch in range(1, self.cfg.epochs + 1):
                 train_ds.set_epoch(epoch)
@@ -258,20 +240,26 @@ class Trainer:
 
                 metrics = self.evaluate(model, loader)
                 dice = metrics["macro_dice_left"]
-                log = {"epoch": epoch, "train_loss": float(np.mean(losses)), "macro_dice_left": dice}
-                if wb:
-                    import wandb
-
-                    wandb.log(log, step=epoch)
+                tb.log_scalars(
+                    {"train/loss": float(np.mean(losses)), "val/macro_dice_left": dice},
+                    step=epoch,
+                )
+                print(
+                    f"[overfit] epoch {epoch}: loss={float(np.mean(losses)):.4f} dice={dice:.4f}",
+                    flush=True,
+                )
                 if dice >= target:
                     break
 
-            if wb:
-                import wandb
-
-                wandb.finish()
-
-            return {"mode": "overfit", "final_macro_dice_left": dice, "target": target}
+            tb.close()
+            return {
+                "mode": "overfit",
+                "final_macro_dice_left": dice,
+                "target": target,
+                "tensorboard_run": str(
+                    self.cfg.tensorboard_log_dir / self.cfg.experiment_name / run_name
+                ),
+            }
 
         fold_indices = (
             [self.cfg.fold] if self.cfg.fold is not None else list(range(len(folds)))
@@ -290,6 +278,9 @@ class Trainer:
             "folds": all_summaries,
             "mean_best_val_macro_dice_left": mean_best,
             "std_best_val_macro_dice_left": std_best,
+            "tensorboard_logdir": str(
+                self.cfg.project_root / self.cfg.tensorboard_log_dir / self.cfg.experiment_name
+            ),
         }
         out = self.cfg.checkpoint_dir / self.cfg.experiment_name / "cv_report.json"
         out.parent.mkdir(parents=True, exist_ok=True)

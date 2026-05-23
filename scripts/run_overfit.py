@@ -19,15 +19,15 @@ def main() -> None:
         default=Path("configs/overfit_single.yaml"),
     )
     parser.add_argument("--subject", type=str, default=None)
-    parser.add_argument("--no-wandb", action="store_true")
+    parser.add_argument("--no-tensorboard", action="store_true")
     args = parser.parse_args()
 
     overrides: dict = {}
     if args.subject:
         overrides["subjects"] = [args.subject]
         overrides["overfit_subject"] = args.subject
-    if args.no_wandb:
-        overrides["use_wandb"] = False
+    if args.no_tensorboard:
+        overrides["use_tensorboard"] = False
 
     cfg = TrainConfig.from_yaml(args.config, overrides=overrides).resolve_paths(Path.cwd())
     report = Trainer(cfg).run()

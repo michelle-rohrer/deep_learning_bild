@@ -23,6 +23,5 @@ mc_samples: 20
 eval_every_epochs: 1
 
 augmentation: false
-use_wandb: true
-wandb_project: dlbs-muscle-seg
-wandb_tags: [baseline, bayesian-unet, left-only]
+use_tensorboard: true
+tensorboard_log_dir: runs

@@ -1,25 +1,25 @@
-# Technische Validierung: ein Fall, Dice >= 0.90 (Kap. 3.3)
+# CPU-Durchlauf (kleinere Patches, weniger MC-Samples) – technische Validierung
 experiment_name: overfit_single
 seed: 42
-device: cuda
+device: cpu
 
 data_dir: data
 checkpoint_dir: checkpoints
 
-patch_size: [128, 128, 32]
-patches_per_volume: 16
+patch_size: [64, 64, 16]
+patches_per_volume: 12
 batch_size: 2
 num_workers: 0
 
-base_channels: 16
-depth: 4
+base_channels: 12
+depth: 3
 dropout: 0.3
 
-epochs: 200
+epochs: 80
 learning_rate: 0.0001
-max_train_steps_per_epoch: 50
-mc_samples: 5
-eval_every_epochs: 1
+max_train_steps_per_epoch: 25
+mc_samples: 3
+eval_every_epochs: 2
 
 overfit_subject: "512"
 overfit_target_dice: 0.90
