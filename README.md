@@ -22,6 +22,18 @@ Beste Einzelklassen mit hpt_combined: VL 0.743, VI 0.716, VM 0.415.
 
 ---
 
+## Primärer Einstiegspunkt
+
+**[`notebooks/main.ipynb`](notebooks/main.ipynb)** · [HTML-Export](docs/main.html)
+
+Zeigt den vollständigen Lösungsprozess: Overfit-Test → Trainingskurven → Evaluation → Prediction-Visualisierungen (Water | GT | Prediction aus TensorBoard) → Abbildungen A4–A6 → Zusammenfassung.
+
+**[`notebooks/EDA.ipynb`](notebooks/EDA.ipynb)** · [HTML-Export](docs/EDA.html)
+
+Explorative Datenanalyse: Inventar, Muskelvolumen, Klassen-Imbalance, Slice-Coverage.
+
+---
+
 ## Setup
 
 ```bash
@@ -157,10 +169,12 @@ src/muscle_seg/
     tensorboard_logger.py
 
 notebooks/
-  EDA.ipynb                 # Exploratory Data Analysis (Notebook-Abgabe)
+  main.ipynb                # Primärer Einstiegspunkt (Lösungsprozess, HTML-Export)
+  EDA.ipynb                 # Explorative Datenanalyse (HTML-Export)
 
 docs/
-  bericht.md                # Schriftlicher Bericht (M4)
+  main.html                 # HTML-Export von main.ipynb
+  EDA.html                  # HTML-Export von EDA.ipynb
   figures/                  # Abbildungen A4–A6 (aus plot_figures.py)
   Aufgabenstellung.pdf
   bewertungsraster.xlsx
