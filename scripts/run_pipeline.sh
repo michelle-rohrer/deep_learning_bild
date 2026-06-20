@@ -32,7 +32,7 @@ run_baseline() {
 }
 
 run_eval() {
-  echo "=== 4/4 Evaluation ==="
+  echo "=== 4/4 Evaluation (Volume + TensorBoard-Bilder) ==="
   python scripts/evaluate.py --config configs/baseline.yaml
 }
 
@@ -55,5 +55,8 @@ case "$STEP" in
 esac
 
 echo
-echo "Fertig. TensorBoard: python scripts/tensorboard.py --logdir runs"
-echo "Reports: checkpoints/*/cv_report.json, docs/EXPERIMENT_RESULTS.md"
+echo "Fertig."
+echo "  TensorBoard: python scripts/launch_tensorboard.py --logdir runs/baseline"
+echo "    → Tab Images: eval/<subject>/mosaic_water_gt_pred (GT + Prediction)"
+echo "    → Tab Images: fold0/train_images/val/patch_mosaic_* (während Training)"
+echo "  Reports: checkpoints/baseline/eval_report.json"

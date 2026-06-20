@@ -1,4 +1,4 @@
-"""Multi-Klassen Dice Loss (ungewichtet, Baseline)."""
+"""Multi-Klassen Dice Loss (Hintergrund ausgeschlossen)."""
 
 from __future__ import annotations
 
@@ -10,7 +10,11 @@ from muscle_seg.labels import NUM_CLASSES
 
 
 class MultiClassDiceLoss(nn.Module):
-    """Softmax-Dice über alle Klassen (inkl. BG); Hintergrund kann später maskiert werden."""
+    """Softmax-Dice über Vordergrund-Klassen (BG ausgeschlossen).
+
+    Hintergrund (Klasse 0) hat Dice ~0.99 und würde den Loss-Gradienten
+    für die kleinen Muskelklassen verwässern.
+    """
 
     def __init__(self, num_classes: int = NUM_CLASSES, smooth: float = 1e-5):
         super().__init__()
@@ -26,4 +30,5 @@ class MultiClassDiceLoss(nn.Module):
         intersection = (probs * targets_oh).sum(dims)
         cardinality = probs.sum(dims) + targets_oh.sum(dims)
         dice = (2.0 * intersection + self.smooth) / (cardinality + self.smooth)
-        return 1.0 - dice.mean()
+        # Klasse 0 (BG) ausschliessen — nur Klassen 1..N mitteln
+        return 1.0 - dice[1:].mean()

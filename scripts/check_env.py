@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prüft, ob die Umgebung für GPU-Training bereit ist."""
+"""Prüft, ob die Umgebung für GPU-Training und TensorBoard-Visualisierung bereit ist."""
 
 from __future__ import annotations
 
@@ -30,30 +30,45 @@ def main() -> int:
         ok = False
 
     try:
-        import tensorboard  # noqa: F401
+        from torch.utils.tensorboard.writer import SummaryWriter  # noqa: F401
 
-        print("TensorBoard: ok")
+        print("TensorBoard (SummaryWriter): ok")
     except ImportError:
         print("⚠️  tensorboard fehlt (pip install tensorboard)")
+        ok = False
 
-    data = root / "data"
-    for sub in ("water", "masks"):
-        p = data / sub
-        n = len(list(p.iterdir())) if p.is_dir() else 0
-        status = "ok" if n > 0 else "FEHLT"
-        print(f"data/{sub}: {status} ({n} Einträge)")
-        if n == 0:
-            ok = False
+    try:
+        import tensorflow as tf
+
+        print(f"TensorFlow: {tf.__version__} (tf.summary für Eval-Bilder)")
+    except ImportError:
+        print("⚠️  tensorflow fehlt (pip install -e .)")
+        ok = False
+
+    for data_name in ("data", "../cleaned_data_2"):
+        data = (root / data_name).resolve()
+        if not data.is_dir():
+            continue
+        for sub in ("water", "masks"):
+            p = data / sub
+            n = len([x for x in p.iterdir() if x.is_dir()]) if p.is_dir() else 0
+            status = "ok" if n > 0 else "FEHLT"
+            print(f"{data_name}/{sub}: {status} ({n} Subjects)")
+            if n == 0:
+                ok = False
+        break
+    else:
+        print("Daten: FEHLT (data/ oder ../cleaned_data_2 mit water/, masks/)")
+        ok = False
 
     splits = root / "splits" / "folds.json"
     print(f"splits/folds.json: {'ok' if splits.exists() else 'fehlt – python scripts/make_splits.py'}")
 
-    print("\nEmpfohlene Configs auf GPU/Cluster:")
-    print("  configs/overfit_single.yaml")
-    print("  configs/baseline.yaml")
-    print("\nNur Laptop/CPU:")
-    print("  configs/overfit_single_cpu.yaml")
-    print("  configs/baseline_cpu.yaml")
+    print("\nPipeline:")
+    print("  python scripts/train.py --config configs/baseline.yaml")
+    print("  python scripts/evaluate.py --config configs/baseline.yaml")
+    print("  python scripts/visualize_predictions.py --fold 0")
+    print("  python scripts/launch_tensorboard.py --logdir runs/baseline")
 
     return 0 if ok else 1
 

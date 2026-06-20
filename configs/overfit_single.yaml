@@ -3,23 +3,24 @@ experiment_name: overfit_single
 seed: 42
 device: cuda
 
-data_dir: data
+data_dir: ../cleaned_data_2
 checkpoint_dir: checkpoints
 
 patch_size: [128, 128, 32]
-patches_per_volume: 16
+patches_per_volume: 64
 batch_size: 2
 num_workers: 0
 
 base_channels: 16
 depth: 4
-dropout: 0.3
+dropout: 0.0
 
-epochs: 200
-learning_rate: 0.0001
-max_train_steps_per_epoch: 50
-mc_samples: 5
+epochs: 300
+learning_rate: 0.001
+max_train_steps_per_epoch: null
+mc_samples: 1
 eval_every_epochs: 1
+overfit_eval_mc: false
 
 overfit_subject: "512"
 overfit_target_dice: 0.90

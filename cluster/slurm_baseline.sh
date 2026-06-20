@@ -1,25 +1,25 @@
 #!/bin/bash
-#SBATCH --job-name=dlbs-baseline
-#SBATCH --output=logs/slurm-baseline-%j.out
-#SBATCH --error=logs/slurm-baseline-%j.err
-#SBATCH --time=24:00:00
-#SBATCH --gres=gpu:1
+#SBATCH --job-name=dlbs-baseline-right
+#SBATCH -p performance
+#SBATCH --output=logs/slurm-baseline-right-%j.out
+#SBATCH --error=logs/slurm-baseline-right-%j.err
+#SBATCH --time=23:00:00
+#SBATCH --gpus=1
 #SBATCH --cpus-per-task=8
 #SBATCH --mem=48G
 
-# Optional: 3 separate Jobs (ein Fold pro Job), schneller bei Job-Limits:
-#   python scripts/train.py --config configs/baseline.yaml --fold 0
-
 set -euo pipefail
-cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")/..}"
+PROJECT="/cluster/group/vised/muscles-seg/code/deep_learning_bild"
+cd "$PROJECT"
 mkdir -p logs
-
-source .venv/bin/activate
+PY="${PROJECT}/.venv/bin/python"
 export PYTHONUNBUFFERED=1
 
-python scripts/check_env.py
-python scripts/make_splits.py
-python scripts/train.py --config configs/baseline.yaml
-python scripts/evaluate.py --config configs/baseline.yaml
+"${PY}" scripts/check_env.py
+# Splits sind fest (10 Subjects, rechtes Bein) — kein make_splits nötig
+"${PY}" scripts/train.py --config configs/baseline.yaml
+"${PY}" scripts/evaluate.py --config configs/baseline.yaml
 
-echo "Baseline fertig. Report: checkpoints/baseline/cv_report.json"
+echo "Baseline-Right fertig."
+echo "  Metriken: checkpoints/baseline_right/eval_report.json"
+echo "  TensorBoard: python scripts/launch_tensorboard.py --logdir runs/baseline_right"

@@ -1,5 +1,8 @@
-# Baseline (Kap. 3.3) – 3-Fold, Ziel ~3–5 h auf RTX A4500 (nicht 24 h Voll-Lauf)
-experiment_name: baseline_right
+# HPT Combined: Focal-Tversky Loss + klassen-balanciertes Sampling
+# Beide Fixes greifen auf verschiedenen Ebenen:
+#   - class_balanced_sampling: welche Patches (Hamstrings gleich häufig wie VL)
+#   - focal_tversky: welche Voxel im Patch (FN stärker bestrafen als FP)
+experiment_name: hpt_combined
 seed: 42
 device: cuda
 
@@ -10,15 +13,22 @@ checkpoint_dir: checkpoints
 patch_size: [128, 128, 32]
 patches_per_volume: 16
 batch_size: 2
-num_workers: 0  # >0 dupliziert Volume-Cache pro Worker → OOM auf 32G-Nodes
+num_workers: 0
 
 base_channels: 16
 depth: 4
 dropout: 0.3
 
-epochs: 100
+epochs: 200
 learning_rate: 0.0001
-loss_name: dice
+loss_name: focal_tversky
+tversky_alpha: 0.3
+tversky_beta: 0.7
+tversky_gamma: 0.75
+
+class_balanced_sampling: true
+augmentation: false
+
 mc_samples: 5
 eval_every_epochs: 10
 eval_use_mc: false
@@ -30,8 +40,6 @@ eval_bbox_margin: 16
 eval_n_slices: 6
 eval_log_tensorboard: true
 train_log_val_images: true
-# eval_stride: [64, 64, 16]  # optional; Default = halbe patch_size
 
-augmentation: false
 use_tensorboard: true
 tensorboard_log_dir: runs

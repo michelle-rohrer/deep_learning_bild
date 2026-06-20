@@ -1,5 +1,6 @@
-# Baseline (Kap. 3.3) – 3-Fold, Ziel ~3–5 h auf RTX A4500 (nicht 24 h Voll-Lauf)
-experiment_name: baseline_right
+# HPT Run 1: Dice + Focal Loss mit Klassengewichtung
+# Vergleich zur Baseline: nur loss_name geändert (alles andere identisch)
+experiment_name: hpt_focal
 seed: 42
 device: cuda
 
@@ -10,7 +11,7 @@ checkpoint_dir: checkpoints
 patch_size: [128, 128, 32]
 patches_per_volume: 16
 batch_size: 2
-num_workers: 0  # >0 dupliziert Volume-Cache pro Worker → OOM auf 32G-Nodes
+num_workers: 0
 
 base_channels: 16
 depth: 4
@@ -18,7 +19,12 @@ dropout: 0.3
 
 epochs: 100
 learning_rate: 0.0001
-loss_name: dice
+loss_name: dice_focal
+focal_gamma: 2.0
+# Klasse 0=BG, 1=VL_R, 2=RF_R, 3=VM_R, 4=VI_R, 5=BfSH_R, 6=BfLH_R, 7=ST_R, 8=SM_R
+# Hamstrings (5-8) stark gewichtet da Dice=0 in Baseline
+focal_alpha: [0.1, 1.0, 2.0, 1.5, 1.5, 4.0, 4.0, 3.0, 3.0]
+
 mc_samples: 5
 eval_every_epochs: 10
 eval_use_mc: false
@@ -30,7 +36,6 @@ eval_bbox_margin: 16
 eval_n_slices: 6
 eval_log_tensorboard: true
 train_log_val_images: true
-# eval_stride: [64, 64, 16]  # optional; Default = halbe patch_size
 
 augmentation: false
 use_tensorboard: true

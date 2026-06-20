@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import numpy as np
 import torch
 
-from muscle_seg.labels import LEFT_MUSCLE_LABELS
+from muscle_seg.labels import LABEL_NAMES, LEFT_MUSCLE_LABELS
 
 
 def dice_per_class(
@@ -49,3 +50,53 @@ def aggregate_macro_dice(values: list[float]) -> tuple[float, float]:
         return 0.0, 0.0
     t = torch.tensor(values, dtype=torch.float64)
     return float(t.mean()), float(t.std(unbiased=False))
+
+
+def compute_subject_metrics_left(
+    subject: str,
+    gt: np.ndarray,
+    pred: np.ndarray,
+    present_classes: list[int] | None = None,
+) -> dict:
+    """
+    Pro-Klasse-Metriken auf dem ganzen Volume (Sabina-Stil, nur links 1–8).
+
+    Klassen ohne GT und ohne Pred werden übersprungen.
+    Nur-GT oder nur-Pred zählen (Dice kann 0 sein).
+    """
+    classes = list(present_classes) if present_classes is not None else list(LEFT_MUSCLE_LABELS)
+    per_class: dict[str, dict[str, float]] = {}
+    dice_vals: list[float] = []
+
+    for c in classes:
+        if c not in LEFT_MUSCLE_LABELS:
+            continue
+        p = pred == c
+        g = gt == c
+        p_sum = float(p.sum())
+        g_sum = float(g.sum())
+        if p_sum == 0 and g_sum == 0:
+            continue
+        tp = float((p & g).sum())
+        denom = p_sum + g_sum
+        dice = (2.0 * tp) / denom if denom > 0 else float("nan")
+        prec = (tp / p_sum) if p_sum > 0 else float("nan")
+        rec = (tp / g_sum) if g_sum > 0 else float("nan")
+        name = LABEL_NAMES.get(c, str(c))
+        per_class[name] = {
+            "dice": dice,
+            "precision": prec,
+            "recall": rec,
+            "gt_voxels": g_sum,
+            "pred_voxels": p_sum,
+        }
+        if dice == dice:
+            dice_vals.append(dice)
+
+    macro = float(np.mean(dice_vals)) if dice_vals else float("nan")
+    return {
+        "subject": subject,
+        "macro_dice_left": macro,
+        "per_class": per_class,
+        "n_classes_scored": len(dice_vals),
+    }

@@ -3,8 +3,7 @@ data/
 results/
 checkpoints/
 runs/
-cluster/logs/
-results/
+logs/
 # splits/folds.json wird versioniert (reproduzierbar via scripts/make_splits.py)
 
 # Python
