@@ -30,8 +30,6 @@ eval_bbox_margin: 16
 eval_n_slices: 6
 eval_log_tensorboard: true
 train_log_val_images: true
-# eval_stride: [64, 64, 16]  # optional; Default = halbe patch_size
-
 augmentation: false
 use_tensorboard: true
 tensorboard_log_dir: runs
